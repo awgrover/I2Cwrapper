@@ -126,10 +126,12 @@ const uint8_t endstopsCmd           = asCmdOffset + 32; const uint8_t endstopsRe
 
 
 /// @brief stepper state machine states
-const uint8_t state_stopped             = 0; ///< state machine is inactive, stepper can still be controlled directly
-const uint8_t state_run                 = 1; ///< corresponds to AccelStepper::run(), will fall back to state_stopped if target reached or endstop hit
-const uint8_t state_runSpeed            = 2; ///< corresponds to AccelStepper::runSpeed(), will remain active until stopped by user or endstop
-const uint8_t state_runSpeedToPosition  = 3; ///< corresponds to AccelStepper::state_runSpeedToPosition(), will fall back to state_stopped if target position reached or endstop hit
+enum State : uint8_t {
+  state_stopped,            ///< state machine is inactive, stepper can still be controlled directly
+  state_run,                ///< corresponds to AccelStepper::run(), will fall back to state_stopped if target reached or endstop hit
+  state_runSpeed,           ///< corresponds to AccelStepper::runSpeed(), will remain active until stopped by user or endstop
+  state_runSpeedToPosition ///< corresponds to AccelStepper::state_runSpeedToPosition(), will fall back to state_stopped if target position reached or endstop hit
+  };
 
 /*!
  * @ingroup InterruptReasons
