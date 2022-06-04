@@ -34,8 +34,6 @@
 #endif // DEBUG
 #endif // log
 
-
-
 // Pin commands (reserved 060 - 069 PinI2C)
 const uint8_t pinCmdOffset          = 60;
 const uint8_t pinPinModeCmd         = pinCmdOffset + 0;
@@ -96,7 +94,7 @@ public:
   void digitalWrite(uint8_t pin, uint8_t value) { ::digitalWrite(pin,value); };
   int digitalRead(uint8_t pin) { return ::digitalRead(pin); };
   int analogRead(uint8_t pin) { return ::analogRead(pin); };
-  void analogReference(uint8_t mode) { ::analogReference(mode); };
+  void analogReference(eAnalogReference mode) { ::analogReference(mode); };
   void analogWrite(uint8_t pin, int value) { ::analogWrite(pin,value); };
   
 private:
