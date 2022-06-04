@@ -13,6 +13,8 @@
 
      Controller:
      I2C to Target        SDA/SCL/GND UNO=18/19/GND
+     4.7k resistors       SDA & SCL   to logic-level voltage +
+      These pull-ups are pretty important, I2C may not work without them.
 
      Target:
      I2C from Controller  SDA/SCL/GND UNO=18/19/GND
@@ -20,14 +22,19 @@
      LED, mirrors switch  13,GND      digital, w/usual 220ohm resistor, uno = LED_BUILTIN
      potentiometer 1-10K  Vcc,14,GND  analog-in, wiper on 14 (uno=A0)
      LED, mirrors pot     6,GND       PWM, w/usual 220ohm resistor
-     Vcc from Controller  VCC         If Vcc is same, OR use USB power
+     Vusb from Controller Vusb        OR connect USB power to Target SEPARATELY
+      CAUTION: be very careful if you connect power between Arduinos.
+      If there is a USB power pin exposed, that should be safe.
+      Note, on the Uno and Mega 2560 that pin is call "5V".
+      Otherwise, just supply a separate USB power cable to the Target.
 
    How To:
-    This sketch is written with Uno pins in mind.
+    This sketch is written with Uno pins in mind. 
+    You may have to change the pin numbers for other Arduinos.
+    
     Pick 2 Arduinos. One will be the Controller, and one the Target.
     Pick Arduinos that have the same `Vcc`, ie. 3v or 5v `logic level`.
-      (or you'll have to use a logic-level shifter, 
-      and figure out how to power the Target's Vcc).
+      (or you'll have to use a logic-level shifter) 
     And, the simplest switch: single-throw (or momentary), normally-open.
 
     Setup
@@ -36,39 +43,48 @@
       Otherwise, you could do "Prove Target" (below) and use the first bit of output to help you.
 
     Prove Target
-    1. Wire up the Target as above, but skipping the I2C wires (no harm done if you wire them, though)
-    2. Uncomment `#define I2CWRAPPER_LOOPBACK`
-    3. Upload this sketch to the Target
+    1. Wire up the Target as above, but do not connect the I2C wires
+    2. Do not connect Vcc/Vusb to the Controller
+    3. Uncomment `#define I2CWRAPPER_LOOPBACK`
+    4. Upload this sketch to the Target
        Watch for any "static assertion failed" erorrs, 
        this sketch can detect some cases where aPinIn and aPinOut are not valid.
-    4. Open the console
+    5. Open the console
        Note the first bit, it tries to give you a clue about analog-pins and LED_BUILTIN.
     Be patient with the following tests, the inputs are only tested every 1/2 second, so slow response
-    5. Test the switch
+    6. Test the switch
        The `dPinOut` LED (builtin on Uno) should follow the switch open/closed.
        And the console will echo it.
-    6. Test the potentiometer
+    7. Test the potentiometer
        The `aPinOut` LED (e.g. PWM pin 6) should follow the potentiometer in brightness.
        And the console will echo it.
-    7. Debug wiring if the LEDs or console in the above doesn't "follow" the hardware.
+    8. Debug wiring if the LEDs or console in the above doesn't "follow" the hardware.
        And/or figure out the correct pin INTEGERS and adjust this sketch.
 
     Setup I2C: Controller & Target as target
-    1. Load the Target with examples:firmware
-    1. check console? set debug?
-    1. Disconnect the Target from USB
-    2. Wire the Controller to Target with I2C
+    1. Open examples:i2cwrapper:firmware
+    2. Edit firmware_modules.h, uncomment the line: #include "PinI2C_firmware.h"
+    3  Save
+    4. Upload to the Target
+    5. check console? set debug?
+    6. Disconnect the Target from USB
+    7. Wire the Controller to Target with I2C
        Don't forget GND to GND
-    3. Wire Vcc together.
+    8. Wire Vcc together.
        CAUTION: only if voltage is the same (3v vs 5v!)
        CAUTION: only if no USB is connected to the Target
-       (or, no Vcc connection and USB on Target, still need GND to GND)
-    4. Comment `#define I2CWRAPPER_LOOPBACK`
-    1. Upload this sketch to the Controller
-    1. Open the console
+       CAUTION: only if you know what Vcc's to connect.
+       (or, no Vcc connection and using USB power on Target, still need GND to GND)
+    9. Comment `#define I2CWRAPPER_LOOPBACK`
+    10. Upload this sketch to the Controller
+    11. Open the console
+    12. Test the hardware on the Target just like "Prove Target" above!
+        Same output to console!
+    13. There should be helpful messages at each stage,
+        and that should help you figure out if something hangs or goes wrong.
 */
 
-#define I2CWRAPPER_LOOPBACK
+//#define I2CWRAPPER_LOOPBACK
 
 #include <Wire.h>
 #include <PinI2C.h>
@@ -93,6 +109,10 @@ void setup()
 {
   Wire.begin();
   Serial.begin(115200);
+  // all chips with "native" usb require waiting till `Serial` is true
+  unsigned int begin_time=millis();
+  while(! Serial && millis()-begin_time < 1000) { delay(10); } // but at most 1 sec if not plugged in to usb
+
   // Wire.setClock(10000); // uncomment for ESP8266 targets, to be on the safe side
 
 #ifndef I2CWRAPPER_LOOPBACK
@@ -102,10 +122,16 @@ void setup()
     Serial.println("Target found as expected. Proceeding.\n");
   }
 #else
+  Serial.print(F( "I2CWRAPPER_LOOPBACK " __FILE__ " " __DATE__ " " __TIME__ " gcc " __VERSION__ " ide "));
+  Serial.println(ARDUINO);
+  
   // A little help on the pins
   static_assert( dPinIn < NUM_DIGITAL_PINS, "dPinIn is not a digital pin (too large)");
   static_assert( dPinOut < NUM_DIGITAL_PINS, "dPinOut is not a digital pin (too large)");
+#ifndef ARDUINO_ARCH_SAMD
+  // sadly not usable w/samd arduino code
   static_assert(digitalPinHasPWM(aPinOut), "aPinOut is not PWM capable on this Arduino");
+#endif
   // doesn't cover all cases (e.g. int 13 on Uno):
   static_assert( analogInputToDigitalPin(aPinIn - analogInputToDigitalPin(0)) >= 0, "aPinIn is not analogRead() capable an this Arduino");
 #ifdef LED_BUILTIN
@@ -116,20 +142,24 @@ void setup()
   Serial.print("A0="); Serial.println(A0);
   Serial.print("aPinIn "); Serial.print(aPinIn); Serial.print("=A"); Serial.println(aPinIn - analogInputToDigitalPin(0));
 
+  Serial.println("First I2C, if it hangs here, connect I2C or at least put a pull-up on SDA & SCL...");
   if (!wrapper.ping()) {
     Serial.println("Loopback mode, no target found AS EXPECTED. Proceeding");
   } else {
     Serial.println("Loopback mode, Target UNEXPECTEDLY found. Proceeding.\n");
   }
 #endif
+  Serial.println("Rebooting Target, 1/2 second...");
   wrapper.reset(); // reset the target device
   delay(500); // and give it time to reboot
 
+  Serial.println("Configuring Target pins...");
   pins.pinMode(dPinIn, INPUT_PULLUP); // INPUT_PULLUP is more universal for a simple switch, but "backwards" values
   pins.pinMode(dPinOut, OUTPUT);
   pins.pinMode(aPinIn, INPUT);
   pins.pinMode(aPinOut, OUTPUT);
 
+  Serial.println("Setup() finished, running...");
 }
 
 void loop()
