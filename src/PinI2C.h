@@ -34,6 +34,8 @@
 #endif // DEBUG
 #endif // log
 
+
+
 // Pin commands (reserved 060 - 069 PinI2C)
 const uint8_t pinCmdOffset          = 60;
 const uint8_t pinPinModeCmd         = pinCmdOffset + 0;
