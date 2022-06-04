@@ -6,6 +6,19 @@
    digital and a PWM-capable output pin.
    Needs PinI2C.h module enabled in the target's firmware_modules.h.
 
+   Wiring:
+     Hardware             Pins        Notes
+
+     Controller:
+     I2C to Target        SDA/SCL/GND UNO=18/19/GND    
+
+     Target:
+     I2C from Controller  SDA/SCL/GND UNO=18/19/GND
+     switch n/o           12,GND      digital
+     LED mirror switch    13,GND      digital w/usual 220ohm resistor
+     potentiometer 1-10K  Vcc,14,GND  analog-in, wiper on 14 (A0)
+     LED mirror pot       6,GND       PWM, w/usual 220ohm resistor
+     Vcc from Controller  VCC         If Vcc is same, OR use USB power
 */
 
 
