@@ -82,5 +82,26 @@ private:
 
 };
 
+class PinI2C_LoopBack
+{
+public:
+  
+  /*!
+   * @brief Constructor.
+   * @param w Wrapper object representing the target the pin is connected to.
+   */
+  PinI2C_LoopBack(I2Cwrapper* w) {}
+
+  void pinMode(uint8_t pin, uint8_t mode) { ::pinMode(pin,mode); };
+  void digitalWrite(uint8_t pin, uint8_t value) { ::digitalWrite(pin,value); };
+  int digitalRead(uint8_t pin) { return ::digitalRead(pin); };
+  int analogRead(uint8_t pin) { return ::analogRead(pin); };
+  void analogReference(eAnalogReference mode) { ::analogReference(mode); };
+  void analogWrite(uint8_t pin, int value) { ::analogWrite(pin,value); };
+  
+private:
+
+};
+
 
 #endif
