@@ -101,21 +101,25 @@ PinI2C pins(&wrapper); // ...that the pin interface needs to communicate with th
 // Note: These are pins on the Target, use integers, don't use names like "A0".
 // You may have to deduce the integer value on the target with: Serial.println(A0);
 const uint8_t dPinIn  = 12; // any pin; a simple switch (SPST normally-open) connects to GND.
-const uint8_t dPinOut = 13; // any pin; connect LED with resistor or just use 13 = LED_BUILTIN on Uno/Nano
+const uint8_t dPinOut = 13; // any pin; connect LED with resistor or just use 13 = LED_BUILTIN on many boards
 const uint8_t aPinIn  = 14; // needs analog-in pin; 14 is A0 on Uno, connect potentiometer against GND and +V
 const uint8_t aPinOut = 6;  // needs PWM pin; 6 is PWM-capable on Uno/Nano; connect LED with resistor, or multimeter
 
 void setup()
 {
   Wire.begin();
+
   Serial.begin(115200);
-  // all chips with "native" usb require waiting till `Serial` is true
-  unsigned int begin_time=millis();
-  while(! Serial && millis()-begin_time < 1000) { delay(10); } // but at most 1 sec if not plugged in to usb
+
+#ifndef I2CWRAPPER_LOOPBACK
+  // native USB needs to wait
+  unsigned int begin_time = millis();
+  while (! Serial && millis() - begin_time < 1000) {
+    delay(10);  // but at most 1 sec if not plugged in to usb
+  }
 
   // Wire.setClock(10000); // uncomment for ESP8266 targets, to be on the safe side
 
-#ifndef I2CWRAPPER_LOOPBACK
   if (!wrapper.ping()) {
     halt("Target not found! Check connections and restart.");
   } else {
@@ -150,6 +154,7 @@ void setup()
   }
 #endif
   Serial.println("Rebooting Target, 1/2 second...");
+
   wrapper.reset(); // reset the target device
   delay(500); // and give it time to reboot
 
@@ -168,6 +173,7 @@ void loop()
   pins.analogWrite(aPinOut, pins.analogRead(aPinIn) / 4);
   Serial.print("Digital input pin = "); Serial.print(pins.digitalRead(dPinIn)); // actual switch
   Serial.print(" | Analog input pin = "); Serial.println(pins.analogRead(aPinIn));
+
   delay(500);
 }
 
